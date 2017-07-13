@@ -1,0 +1,173 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Hashpass + Diceware</title>
+
+    <style type="text/css">
+      html {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        width: 332px;
+        font-family: sans-serif;
+        font-size: 0.9em;
+        color: #333;
+      }
+
+      input {
+        display: block;
+        box-sizing: border-box;
+        width: 300px;
+        height: 40px;
+        border: 2px solid #ddd;
+        border-radius: 2px;
+        padding: 8px 12px;
+        margin: 16px;
+        outline-style: none;
+        line-height: 20px;
+        font-size: 1.2em;
+        color: inherit;
+      }
+
+      input:focus {
+        border-color: #f872ae;
+      }
+
+      input, p {
+        margin: 16px;
+      }
+
+      .small-top-margin {
+        margin-top: 4px;
+      }
+
+      .small-bottom-margin {
+        margin-bottom: 4px;
+      }
+
+      .disabled {
+        color: #ccc;
+      }
+
+      input.disabled {
+        font-style: italic;
+      }
+
+      .error {
+        color: #c00;
+      }
+    </style>
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="sjcl.js"></script>
+    <script type="text/javascript" src="hashpass_diceware_eff_large_wordlist.js"></script>
+    <script type="text/javascript">
+
+        // The hashing difficulty.
+        // 2 ^ difficulty rounds of SHA-256 will be computed.
+        var difficulty = 16;
+
+        var transform = function(domain, key) {
+            // Compute the first 16 base64 characters of iterated-SHA-256(domain + '/' + key, 2 ^ difficulty).
+            var rounds = Math.pow(2, difficulty);
+            var bits = domain + '/' + key;
+            for (var i = 0; i < rounds; i += 1) {
+                bits = sjcl.hash.sha256.hash(bits);
+            }
+
+            var hash = sjcl.codec.base64.fromBits(bits).slice(0, 16);
+            return hash;
+        };
+
+        var update = function() {
+
+            var key = $('#key').val();
+            var domain = $('#domain').val().replace(/^\s+|\s+$/g, '').toLowerCase();
+
+            var hash = transform(domain, key)
+            $('#hash').val(hash);
+
+            return hash;
+        };
+
+        var update_diceware = function() {
+
+            update();
+
+            var key = $('#key').val();
+            var domain = $('#domain').val().replace(/^\s+|\s+$/g, '').toLowerCase();
+
+            $('#diceware').val("");
+
+            all_dice_nums = [];
+            for (var i = 0; i < 40; i++) {
+                key_i = "" + key + i.toString();
+                passwd_i = transform(domain, key_i);
+                $('#diceware').get(0).value += "counter = " + i.toString();
+                $('#diceware').get(0).value += ", key = " + key_i;
+                $('#diceware').get(0).value += ", pwd = " + passwd_i;
+                
+                num_in_passwd_i = [];
+                for (var j = 0; j < passwd_i.length; j++) {
+                    current_char = passwd_i.charAt(j);
+                    is_number = ! isNaN(current_char);
+                    if (is_number) {
+                        num_in_passwd_i.push(current_char);
+                    }
+                }
+                $('#diceware').get(0).value += ", numbers = " + num_in_passwd_i.toString() + "\n";
+                dice_nums = [];
+                for (var j = 0; j < num_in_passwd_i.length; j++) {
+                    num = parseInt(num_in_passwd_i[j]);
+                    if ((num <= 6) && (num > 0)) {
+                        dice_nums.push(num);
+                        all_dice_nums.push(num);
+                    }
+                }
+            }
+            $('#diceware').get(0).value += "diceware numbers: ";
+            $('#diceware').get(0).value += all_dice_nums.toString() + "\n";
+            $('#diceware').get(0).value += "diceware numbers by groups of 5:" + "\n";
+            curr_group = "";
+            var print_curr_group = function(curr_group) {
+                var key = "x" + curr_group;
+                if (key in eff_large_wordlist) {
+                    $('#diceware').get(0).value += "" + curr_group + " " + eff_large_wordlist["x" + curr_group] + "\n";
+                } else {
+                    $('#diceware').get(0).value += "" + curr_group + "\n";
+                }
+            };
+            for (var i = 0; i < all_dice_nums.length; i++) {
+                if (curr_group.length < 5) {
+                    curr_group += all_dice_nums[i].toString();
+                } else {
+                    print_curr_group(curr_group);
+                    curr_group = "";
+                }
+            }
+            if (curr_group.length > 0) {
+                print_curr_group(curr_group);
+            }
+
+            return hash;
+        };
+
+    </script>
+  </head>
+  <body>
+    <p class="small-bottom-margin">Domain:</p>
+    <input id="domain" class="small-top-margin" type="text"/>
+    <p class="small-bottom-margin">Key:</p>
+    <input id="key" class="small-top-margin" type="password"/>
+    <p class="small-bottom-margin">Hash:</p>
+    <input id="hash" class="small-top-margin" type="text" readonly="true"/>
+    <input type="button" value="calculate hash" onclick="update();" />
+    <input type="button" value="calculate diceware (slow!)" onclick="update_diceware();" />
+    <p class="small-bottom-margin">Diceware data:</p>
+    <textarea id="diceware" class="small-top-margin" rows="50" cols="100" readonly="true" ></textarea>
+    <p id="message">&nbsp;</p>
+  </body>
+</html>
