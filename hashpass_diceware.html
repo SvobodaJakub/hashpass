@@ -18,7 +18,7 @@
         color: #333;
       }
 
-      input {
+      .input {
         display: block;
         box-sizing: border-box;
         width: 300px;
@@ -34,7 +34,7 @@
         color: inherit;
       }
 
-      textarea {
+      .textarea {
         display: block;
         box-sizing: border-box;
         width: 700px;
@@ -97,8 +97,11 @@
         };
 
         var show_password = function() {
-            $('#keyplaintext').val($('#key').val());
-
+            if ($('#showpasswd').get(0).checked) {
+                $('#keyplaintext').val($('#key').val());
+            } else {
+                $('#keyplaintext').val("");
+            }
         }
 
         var update = function() {
@@ -109,29 +112,42 @@
             var hash = transform(domain, key)
             $('#hash').val(hash);
 
-            return hash;
+            var check = ("S79jGLaGcHEjmfWe" === transform("d", "k"));
+            if (!check) {
+                var msg = "Unknown error, cannot compute values, might be a bug in browser's javascript engine?";
+                $('#hash').val(msg);
+                $('#diceware').val(msg);
+            }
         };
 
         var param_i = -1;
         var max_i = 40;
         var already_running = false;
         var all_dice_nums = [];
+        var key_for_diceware_use = "";
+        var domain_for_diceware_use = "";
         var update_diceware = function() {
             if (param_i == -1) {
                 already_running = true;
                 all_dice_nums = [];
+                var key = $('#key').val();
+                key_for_diceware_use = key;
+                var domain = $('#domain').val();
+                domain_for_diceware_use = domain;
                 update();
                 $('#diceware').val("");
                 param_i++;
                 setTimeout(update_diceware, 50);
             } else if (param_i < max_i) {
-                var key = $('#key').val();
-                var domain = $('#domain').val();
+                var key = key_for_diceware_use;
+                var domain = domain_for_diceware_use;
                 var i = param_i;
                 key_i = "" + key + i.toString();
                 passwd_i = transform(domain, key_i);
                 $('#diceware').get(0).value += "counter = " + i.toString();
-                $('#diceware').get(0).value += ", key = " + key_i;
+                if ($('#showpasswd').get(0).checked) {
+                    $('#diceware').get(0).value += ", key = " + key_i;
+                }
                 $('#diceware').get(0).value += ", pwd = " + passwd_i;
                 
                 var num_in_passwd_i = [];
@@ -177,8 +193,10 @@
                 if (curr_group.length > 0) {
                     print_curr_group(curr_group);
                 }
-                already_running = false;
                 param_i = -1;
+                key_for_diceware_use = "";
+                domain_for_diceware_use = "";
+                already_running = false;
             }
         };
         var start_update_diceware = function() {
@@ -192,17 +210,18 @@
     </script>
   </head>
   <body>
+    <p class="small-bottom-margin">Show key: <input id="showpasswd" type="checkbox" checked onclick="show_password();" onchange="show_password();" /> </p>
     <p class="small-bottom-margin">Domain:</p>
-    <input id="domain" class="small-top-margin" type="text"/>
+    <input id="domain" class="input small-top-margin" type="text"/>
     <p class="small-bottom-margin">Key:</p>
-    <input id="keyplaintext" class="small-top-margin disabled" type="text" readonly="true"/>
-    <input id="key" class="small-top-margin" type="password" onkeydown="show_password();" onkeyup="show_password();" onclick="show_password();"/>
+    <input id="keyplaintext" class="input small-top-margin disabled" type="text" readonly="true"/>
+    <input id="key" class="input small-top-margin" type="password" onkeydown="show_password();" onkeyup="show_password();" onclick="show_password();" onchange="show_password();"/>
     <p class="small-bottom-margin">Hash:</p>
-    <input id="hash" class="small-top-margin disabled" type="text" readonly="true"/>
-    <input type="button" value="calculate hash" onclick="update();" />
-    <input type="button" value="calculate diceware (slow!)" onclick="start_update_diceware();" />
+    <input id="hash" class="input small-top-margin disabled" type="text" readonly="true"/>
+    <input type="button" class="input" value="calculate hash" onclick="update();" />
+    <input type="button" class="input" value="calculate diceware (slow!)" onclick="start_update_diceware();" />
     <p class="small-bottom-margin">Diceware data:</p>
-    <textarea id="diceware" class="small-top-margin disabled" rows="55" cols="100" readonly="true" ></textarea>
+    <textarea id="diceware" class="textarea small-top-margin disabled" rows="55" cols="100" readonly="true" ></textarea>
     <p id="message">&nbsp;</p>
   </body>
 </html>
