@@ -29,7 +29,24 @@
         margin: 16px;
         outline-style: none;
         line-height: 20px;
+        font-family: monospace;
         font-size: 1.2em;
+        color: inherit;
+      }
+
+      textarea {
+        display: block;
+        box-sizing: border-box;
+        width: 700px;
+        height: 1200px;
+        border: 2px solid #ddd;
+        border-radius: 2px;
+        padding: 8px 12px;
+        margin: 16px;
+        outline-style: none;
+        line-height: 20px;
+        font-family: monospace;
+        font-size: 1.0em;
         color: inherit;
       }
 
@@ -50,11 +67,8 @@
       }
 
       .disabled {
-        color: #ccc;
-      }
-
-      input.disabled {
-        font-style: italic;
+        color: #000;
+        background-color: #eee;
       }
 
       .error {
@@ -82,10 +96,15 @@
             return hash;
         };
 
+        var show_password = function() {
+            $('#keyplaintext').val($('#key').val());
+
+        }
+
         var update = function() {
 
             var key = $('#key').val();
-            var domain = $('#domain').val().replace(/^\s+|\s+$/g, '').toLowerCase();
+            var domain = $('#domain').val();
 
             var hash = transform(domain, key)
             $('#hash').val(hash);
@@ -93,24 +112,29 @@
             return hash;
         };
 
+        var param_i = -1;
+        var max_i = 40;
+        var already_running = false;
+        var all_dice_nums = [];
         var update_diceware = function() {
-
-            update();
-
-            var key = $('#key').val();
-            var domain = $('#domain').val().replace(/^\s+|\s+$/g, '').toLowerCase();
-
-            $('#diceware').val("");
-
-            all_dice_nums = [];
-            for (var i = 0; i < 40; i++) {
+            if (param_i == -1) {
+                already_running = true;
+                all_dice_nums = [];
+                update();
+                $('#diceware').val("");
+                param_i++;
+                setTimeout(update_diceware, 50);
+            } else if (param_i < max_i) {
+                var key = $('#key').val();
+                var domain = $('#domain').val();
+                var i = param_i;
                 key_i = "" + key + i.toString();
                 passwd_i = transform(domain, key_i);
                 $('#diceware').get(0).value += "counter = " + i.toString();
                 $('#diceware').get(0).value += ", key = " + key_i;
                 $('#diceware').get(0).value += ", pwd = " + passwd_i;
                 
-                num_in_passwd_i = [];
+                var num_in_passwd_i = [];
                 for (var j = 0; j < passwd_i.length; j++) {
                     current_char = passwd_i.charAt(j);
                     is_number = ! isNaN(current_char);
@@ -119,7 +143,7 @@
                     }
                 }
                 $('#diceware').get(0).value += ", numbers = " + num_in_passwd_i.toString() + "\n";
-                dice_nums = [];
+                var dice_nums = [];
                 for (var j = 0; j < num_in_passwd_i.length; j++) {
                     num = parseInt(num_in_passwd_i[j]);
                     if ((num <= 6) && (num > 0)) {
@@ -127,32 +151,42 @@
                         all_dice_nums.push(num);
                     }
                 }
-            }
-            $('#diceware').get(0).value += "diceware numbers: ";
-            $('#diceware').get(0).value += all_dice_nums.toString() + "\n";
-            $('#diceware').get(0).value += "diceware numbers by groups of 5:" + "\n";
-            curr_group = "";
-            var print_curr_group = function(curr_group) {
-                var key = "x" + curr_group;
-                if (key in eff_large_wordlist) {
-                    $('#diceware').get(0).value += "" + curr_group + " " + eff_large_wordlist["x" + curr_group] + "\n";
-                } else {
-                    $('#diceware').get(0).value += "" + curr_group + "\n";
+                param_i++;
+                setTimeout(update_diceware, 50);
+            } else {
+                $('#diceware').get(0).value += "diceware numbers: ";
+                $('#diceware').get(0).value += all_dice_nums.toString() + "\n";
+                $('#diceware').get(0).value += "diceware numbers by groups of 5:" + "\n";
+                var curr_group = "";
+                var print_curr_group = function(curr_group) {
+                    var key = "x" + curr_group;
+                    if (key in eff_large_wordlist) {
+                        $('#diceware').get(0).value += "" + curr_group + " " + eff_large_wordlist["x" + curr_group] + "\n";
+                    } else {
+                        $('#diceware').get(0).value += "" + curr_group + "\n";
+                    }
+                };
+                for (var i = 0; i < all_dice_nums.length; i++) {
+                    if (curr_group.length < 5) {
+                        curr_group += all_dice_nums[i].toString();
+                    } else {
+                        print_curr_group(curr_group);
+                        curr_group = "";
+                    }
                 }
-            };
-            for (var i = 0; i < all_dice_nums.length; i++) {
-                if (curr_group.length < 5) {
-                    curr_group += all_dice_nums[i].toString();
-                } else {
+                if (curr_group.length > 0) {
                     print_curr_group(curr_group);
-                    curr_group = "";
                 }
+                already_running = false;
+                param_i = -1;
             }
-            if (curr_group.length > 0) {
-                print_curr_group(curr_group);
+        };
+        var start_update_diceware = function() {
+            if (already_running) {
+                return;
+            } else {
+                update_diceware();
             }
-
-            return hash;
         };
 
     </script>
@@ -161,13 +195,14 @@
     <p class="small-bottom-margin">Domain:</p>
     <input id="domain" class="small-top-margin" type="text"/>
     <p class="small-bottom-margin">Key:</p>
-    <input id="key" class="small-top-margin" type="password"/>
+    <input id="keyplaintext" class="small-top-margin disabled" type="text" readonly="true"/>
+    <input id="key" class="small-top-margin" type="password" onkeydown="show_password();" onkeyup="show_password();" onclick="show_password();"/>
     <p class="small-bottom-margin">Hash:</p>
-    <input id="hash" class="small-top-margin" type="text" readonly="true"/>
+    <input id="hash" class="small-top-margin disabled" type="text" readonly="true"/>
     <input type="button" value="calculate hash" onclick="update();" />
-    <input type="button" value="calculate diceware (slow!)" onclick="update_diceware();" />
+    <input type="button" value="calculate diceware (slow!)" onclick="start_update_diceware();" />
     <p class="small-bottom-margin">Diceware data:</p>
-    <textarea id="diceware" class="small-top-margin" rows="50" cols="100" readonly="true" ></textarea>
+    <textarea id="diceware" class="small-top-margin disabled" rows="55" cols="100" readonly="true" ></textarea>
     <p id="message">&nbsp;</p>
   </body>
 </html>
