@@ -50,9 +50,11 @@ if len(sys.argv) >= 2 and sys.argv[1] == "--diceware-helper":
         print("Problem accessing {}".format(DICEWARE_FILE_NAME))
 
     curr_group = ""
+    words = []
     def print_curr_group(curr_group):
         if curr_group in diceware_word_dict:
             print("{} {}".format(curr_group, diceware_word_dict[curr_group]))
+            words.append(diceware_word_dict[curr_group])
         else:
             print(curr_group)
 
@@ -64,5 +66,7 @@ if len(sys.argv) >= 2 and sys.argv[1] == "--diceware-helper":
             curr_group = ""
     if curr_group:
         print_curr_group(curr_group)
+
+    print(" ".join(words))
 
 
