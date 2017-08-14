@@ -174,10 +174,12 @@
                 $('#diceware').get(0).value += all_dice_nums.toString() + "\n";
                 $('#diceware').get(0).value += "diceware numbers by groups of 5:" + "\n";
                 var curr_group = "";
+                var words = [];
                 var print_curr_group = function(curr_group) {
                     var key = "x" + curr_group;
                     if (key in eff_large_wordlist) {
                         $('#diceware').get(0).value += "" + curr_group + " " + eff_large_wordlist["x" + curr_group] + "\n";
+                        words.push(eff_large_wordlist["x" + curr_group]);
                     } else {
                         $('#diceware').get(0).value += "" + curr_group + "\n";
                     }
@@ -193,6 +195,7 @@
                 if (curr_group.length > 0) {
                     print_curr_group(curr_group);
                 }
+                $('#diceware').get(0).value += words.join(" ") + "\n";
                 param_i = -1;
                 key_for_diceware_use = "";
                 domain_for_diceware_use = "";
